@@ -1,0 +1,81 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+File.version: "1.0"
+
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera1.fx: 517.306408
+Camera1.fy: 516.469215
+Camera1.cx: 318.643040
+Camera1.cy: 255.313989
+
+Camera1.k1: 0.262383
+Camera1.k2: -0.953104
+Camera1.p1: -0.005358
+Camera1.p2: 0.002628
+Camera1.k3: 1.163314
+
+# Camera frames per second 
+Camera.fps: 30
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Camera resolution
+Camera.width: 640
+Camera.height: 480
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 600
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.5
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 4
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 5
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
+
+## IMU noise
+#IMU.NoiseGyro: 1.7e-4 #1.6968e-04
+#IMU.NoiseAcc: 2.0000e-3 #2.0e-3
+#IMU.GyroWalk: 1.9393e-05
+#IMU.AccWalk: 3.0000e-03 # 3e-03
+#IMU.Frequency: 200.0
+#
+## Transformation from body-frame (imu) to camera
+#IMU.T_b_c1: !!opencv-matrix
+#  rows: 4
+#  cols: 4
+#  dt: f
+#  data: [-0.9995250378696743, 0.0075019185074052044, -0.02989013031643309, 0.045574835649698026,
+#         0.029615343885863205, -0.03439736061393144, -0.998969345370175, -0.071161801837997044,
+#         -0.008522328211654736, -0.9993800792498829, 0.03415885127385616, -0.044681254117144367,
+#         0.0, 0.0, 0.0, 1.0]

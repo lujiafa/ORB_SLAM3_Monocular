@@ -1,0 +1,230 @@
+cmake_minimum_required(VERSION 2.8)
+project(ORB_SLAM3)
+
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF()
+MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wall -s -pthread")
+set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
+
+
+set(CMAKE_CXX_STANDARD 11)
+
+
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+
+find_package(OpenCV QUIET)
+if(NOT OpenCV_FOUND)
+    message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
+endif()
+find_package(Eigen3 REQUIRED)
+find_package(Pangolin REQUIRED)
+
+include_directories(
+        ${PROJECT_SOURCE_DIR}
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/include/CameraModels
+        ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
+        ${EIGEN3_INCLUDE_DIR}
+        ${Pangolin_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}
+)
+
+# Build examples
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output)
+### test
+add_executable(orbslam
+        #DBoW2
+        Thirdparty/DBoW2/DBoW2/BowVector.cpp
+        Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
+        Thirdparty/DBoW2/DBoW2/FORB.cpp
+        Thirdparty/DBoW2/DBoW2/ScoringObject.cpp
+        Thirdparty/DBoW2/DUtils/Random.cpp
+        Thirdparty/DBoW2/DUtils/Timestamp.cpp
+        #types
+        Thirdparty/g2o/g2o/types/types_sba.h
+        Thirdparty/g2o/g2o/types/types_six_dof_expmap.h
+        Thirdparty/g2o/g2o/types/types_sba.cpp
+        Thirdparty/g2o/g2o/types/types_six_dof_expmap.cpp
+        Thirdparty/g2o/g2o/types/types_seven_dof_expmap.cpp
+        Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h
+        Thirdparty/g2o/g2o/types/se3quat.h
+        Thirdparty/g2o/g2o/types/se3_ops.h
+        Thirdparty/g2o/g2o/types/se3_ops.hpp
+        #core
+        Thirdparty/g2o/g2o/core/base_edge.h
+        Thirdparty/g2o/g2o/core/base_binary_edge.h
+        Thirdparty/g2o/g2o/core/hyper_graph_action.cpp
+        Thirdparty/g2o/g2o/core/base_binary_edge.hpp
+        Thirdparty/g2o/g2o/core/hyper_graph_action.h
+        Thirdparty/g2o/g2o/core/base_multi_edge.h
+        Thirdparty/g2o/g2o/core/hyper_graph.cpp
+        Thirdparty/g2o/g2o/core/base_multi_edge.hpp
+        Thirdparty/g2o/g2o/core/hyper_graph.h
+        Thirdparty/g2o/g2o/core/base_unary_edge.h
+        Thirdparty/g2o/g2o/core/linear_solver.h
+        Thirdparty/g2o/g2o/core/base_unary_edge.hpp
+        Thirdparty/g2o/g2o/core/marginal_covariance_cholesky.cpp
+        Thirdparty/g2o/g2o/core/base_vertex.h
+        Thirdparty/g2o/g2o/core/marginal_covariance_cholesky.h
+        Thirdparty/g2o/g2o/core/base_vertex.hpp
+        Thirdparty/g2o/g2o/core/matrix_structure.cpp
+        Thirdparty/g2o/g2o/core/batch_stats.cpp
+        Thirdparty/g2o/g2o/core/matrix_structure.h
+        Thirdparty/g2o/g2o/core/batch_stats.h
+        Thirdparty/g2o/g2o/core/openmp_mutex.h
+        Thirdparty/g2o/g2o/core/block_solver.h
+        Thirdparty/g2o/g2o/core/block_solver.hpp
+        Thirdparty/g2o/g2o/core/parameter.cpp
+        Thirdparty/g2o/g2o/core/parameter.h
+        Thirdparty/g2o/g2o/core/cache.cpp
+        Thirdparty/g2o/g2o/core/cache.h
+        Thirdparty/g2o/g2o/core/optimizable_graph.cpp
+        Thirdparty/g2o/g2o/core/optimizable_graph.h
+        Thirdparty/g2o/g2o/core/solver.cpp
+        Thirdparty/g2o/g2o/core/solver.h
+        Thirdparty/g2o/g2o/core/creators.h
+        Thirdparty/g2o/g2o/core/optimization_algorithm_factory.cpp
+        Thirdparty/g2o/g2o/core/estimate_propagator.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm_factory.h
+        Thirdparty/g2o/g2o/core/estimate_propagator.h
+        Thirdparty/g2o/g2o/core/factory.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm_property.h
+        Thirdparty/g2o/g2o/core/factory.h
+        Thirdparty/g2o/g2o/core/sparse_block_matrix.h
+        Thirdparty/g2o/g2o/core/sparse_optimizer.cpp
+        Thirdparty/g2o/g2o/core/sparse_block_matrix.hpp
+        Thirdparty/g2o/g2o/core/sparse_optimizer.h
+        Thirdparty/g2o/g2o/core/hyper_dijkstra.cpp
+        Thirdparty/g2o/g2o/core/hyper_dijkstra.h
+        Thirdparty/g2o/g2o/core/parameter_container.cpp
+        Thirdparty/g2o/g2o/core/parameter_container.h
+        Thirdparty/g2o/g2o/core/optimization_algorithm.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm.h
+        Thirdparty/g2o/g2o/core/optimization_algorithm_with_hessian.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm_with_hessian.h
+        Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm_levenberg.h
+        Thirdparty/g2o/g2o/core/optimization_algorithm_gauss_newton.cpp
+        Thirdparty/g2o/g2o/core/optimization_algorithm_gauss_newton.h
+        Thirdparty/g2o/g2o/core/jacobian_workspace.cpp
+        Thirdparty/g2o/g2o/core/jacobian_workspace.h
+        Thirdparty/g2o/g2o/core/robust_kernel.cpp
+        Thirdparty/g2o/g2o/core/robust_kernel.h
+        Thirdparty/g2o/g2o/core/robust_kernel_factory.cpp
+        Thirdparty/g2o/g2o/core/robust_kernel_factory.h
+        Thirdparty/g2o/g2o/core/robust_kernel_impl.cpp
+        Thirdparty/g2o/g2o/core/robust_kernel_impl.h
+        #stuff
+        Thirdparty/g2o/g2o/stuff/string_tools.h
+        Thirdparty/g2o/g2o/stuff/color_macros.h
+        Thirdparty/g2o/g2o/stuff/macros.h
+        Thirdparty/g2o/g2o/stuff/timeutil.cpp
+        Thirdparty/g2o/g2o/stuff/misc.h
+        Thirdparty/g2o/g2o/stuff/timeutil.h
+        Thirdparty/g2o/g2o/stuff/os_specific.c
+        Thirdparty/g2o/g2o/stuff/os_specific.h
+        Thirdparty/g2o/g2o/stuff/string_tools.cpp
+        Thirdparty/g2o/g2o/stuff/property.cpp
+        Thirdparty/g2o/g2o/stuff/property.h
+        #sophus
+        Thirdparty/Sophus/sophus/average.hpp
+        Thirdparty/Sophus/sophus/common.hpp
+        Thirdparty/Sophus/sophus/geometry.hpp
+        Thirdparty/Sophus/sophus/interpolate.hpp
+        Thirdparty/Sophus/sophus/interpolate_details.hpp
+        Thirdparty/Sophus/sophus/num_diff.hpp
+        Thirdparty/Sophus/sophus/rotation_matrix.hpp
+        Thirdparty/Sophus/sophus/rxso2.hpp
+        Thirdparty/Sophus/sophus/rxso3.hpp
+        Thirdparty/Sophus/sophus/se2.hpp
+        Thirdparty/Sophus/sophus/se3.hpp
+        Thirdparty/Sophus/sophus/sim2.hpp
+        Thirdparty/Sophus/sophus/sim3.hpp
+        Thirdparty/Sophus/sophus/sim_details.hpp
+        Thirdparty/Sophus/sophus/so2.hpp
+        Thirdparty/Sophus/sophus/so3.hpp
+        Thirdparty/Sophus/sophus/types.hpp
+        Thirdparty/Sophus/sophus/velocities.hpp
+        Thirdparty/Sophus/sophus/formatstring.hpp
+        #ORB_SLAM2
+        src/System.cc
+        src/Tracking.cc
+        src/LocalMapping.cc
+        src/LoopClosing.cc
+        src/ORBextractor.cc
+        src/ORBmatcher.cc
+        src/FrameDrawer.cc
+        src/Converter.cc
+        src/MapPoint.cc
+        src/KeyFrame.cc
+        src/Atlas.cc
+        src/Map.cc
+        src/MapDrawer.cc
+        src/Optimizer.cc
+        src/Frame.cc
+        src/KeyFrameDatabase.cc
+        src/Sim3Solver.cc
+        src/ImuTypes.cc
+        src/G2oTypes.cc
+        src/CameraModels/Pinhole.cpp
+        src/CameraModels/KannalaBrandt8.cpp
+        src/OptimizableTypes.cpp
+        src/MLPnPsolver.cpp
+        src/GeometricTools.cc
+        src/TwoViewReconstruction.cc
+        src/Config.cc
+        src/Settings.cc
+        include/System.h
+        include/Tracking.h
+        include/LocalMapping.h
+        include/LoopClosing.h
+        include/ORBextractor.h
+        include/ORBmatcher.h
+        include/FrameDrawer.h
+        include/Converter.h
+        include/MapPoint.h
+        include/KeyFrame.h
+        include/Atlas.h
+        include/Map.h
+        include/MapDrawer.h
+        include/Optimizer.h
+        include/Frame.h
+        include/KeyFrameDatabase.h
+        include/Sim3Solver.h
+        #include/Viewer.h
+        include/ImuTypes.h
+        include/G2oTypes.h
+        include/CameraModels/GeometricCamera.h
+        include/CameraModels/Pinhole.h
+        include/CameraModels/KannalaBrandt8.h
+        include/OptimizableTypes.h
+        include/MLPnPsolver.h
+        include/GeometricTools.h
+        include/TwoViewReconstruction.h
+        include/SerializationUtils.h
+        include/Config.h
+        include/Settings.h
+
+        src/test/QueueProc.cc
+        src/test/testar.cc
+        #src/test/sharedfunc.cc
+        )
+target_link_libraries(orbslam
+        #        ${OpenCV_LIBS}
+        #        ${Pangolin_LIBRARIES}
+        #        -lboost_serialization
+        #        -lcrypto
+
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libboost_serialization.so
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libboost_system.so
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libz.so
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_core.so.3.4
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_features2d.so.3.4
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_imgproc.so.3.4
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_calib3d.so.3.4
+        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_videoio.so.3.4
+        )
