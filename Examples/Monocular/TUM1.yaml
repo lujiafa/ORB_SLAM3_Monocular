@@ -37,7 +37,7 @@ Camera.height: 480
 ORBextractor.nFeatures: 600
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
-ORBextractor.scaleFactor: 1.5
+ORBextractor.scaleFactor: 1.8
 
 # ORB Extractor: Number of levels in the scale pyramid	
 ORBextractor.nLevels: 4

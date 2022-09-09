@@ -348,8 +348,8 @@ void LoopClosing::Run()
         if(CheckFinish()){
             break;
         }
-
-        usleep(5000);
+        if (!CheckNewKeyFrames())
+            usleep(1000);
     }
 
     SetFinish();
@@ -370,7 +370,8 @@ void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
  */
 bool LoopClosing::CheckNewKeyFrames()
 {
-    unique_lock<mutex> lock(mMutexLoopQueue);
+    //todo jon custom
+    //unique_lock<mutex> lock(mMutexLoopQueue);
     return(!mlpLoopKeyFrameQueue.empty());
 }
 
@@ -2823,6 +2824,9 @@ void LoopClosing::RequestResetActiveMap(Map *pMap)
  */
 void LoopClosing::ResetIfRequested()
 {
+    if (!mbResetRequested && !mbResetActiveMapRequested) {
+        return;
+    }
     unique_lock<mutex> lock(mMutexReset);
     // 如果有来自于外部的线程的复位请求,那么就复位当前线程
     if(mbResetRequested)
@@ -3121,7 +3125,8 @@ void LoopClosing::RunGlobalBundleAdjustment(Map* pActiveMap, unsigned long nLoop
 // 由外部线程调用,请求终止当前线程
 void LoopClosing::RequestFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon custom
+    //unique_lock<mutex> lock(mMutexFinish);
     // cout << "LC: Finish requested" << endl;
     mbFinishRequested = true;
 }
@@ -3129,21 +3134,24 @@ void LoopClosing::RequestFinish()
 // 当前线程调用,查看是否有外部线程请求当前线程
 bool LoopClosing::CheckFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon custom
+    //unique_lock<mutex> lock(mMutexFinish);
     return mbFinishRequested;
 }
 
 // 有当前线程调用,执行完成该函数之后线程主函数退出,线程销毁
 void LoopClosing::SetFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon custom
+    //unique_lock<mutex> lock(mMutexFinish);
     mbFinished = true;
 }
 
 // 由外部线程调用,判断当前回环检测线程是否已经正确终止了
 bool LoopClosing::isFinished()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon custom
+    //unique_lock<mutex> lock(mMutexFinish);
     return mbFinished;
 }
 

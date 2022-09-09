@@ -573,7 +573,7 @@ void Tracking::newParameterLoader(Settings *settings) {
         mDistCoef = cv::Mat::zeros(4,1,CV_32F);
     }
 
-    //TODO: missing image scaling and rectification
+    //TODO: missing imagescaling and rectification
     mImageScale = 1.0f;
 
     mK = cv::Mat::eye(3,3,CV_32F);
@@ -1971,7 +1971,6 @@ void Tracking::ResetFrameIMU()
  */
 void Tracking::Track()
 {
-
     if (bStepByStep)
     {
         std::cout << "Tracking: Waiting to the next step" << std::endl;
@@ -2155,18 +2154,26 @@ void Tracking::Track()
                 // mnLastRelocFrameId 上一次重定位的那一帧
                 if((!mbVelocity && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
-                    Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
+                    //todo jon deletelog
+                    //Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackReferenceKeyFrame();
+                    if(!bOK) {
+                        cout << "ref key fail" << endl;
+                    }
                 }
                 else
                 {
-                    Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
+                    //todo jon deletelog
+                    //Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
                     // 用恒速模型跟踪。所谓的恒速就是假设上上帧到上一帧的位姿=上一帧的位姿到当前帧位姿
                     // 根据恒速模型设定当前帧的初始位姿，用最近的普通帧来跟踪当前的普通帧
                     // 通过投影的方式在参考帧中找当前帧特征点的匹配点，优化每个特征点所对应3D点的投影误差即可得到位姿
                     bOK = TrackWithMotionModel();
                     if(!bOK)
                         bOK = TrackReferenceKeyFrame();  // 根据恒速模型失败了，只能根据参考关键帧来跟踪
+                    if(!bOK) {
+                        cout << "hensu key fail" << endl;
+                    }
                 }
 
                 // 新增了一个状态RECENTLY_LOST，主要是结合IMU看看能不能拽回来
@@ -2184,6 +2191,7 @@ void Tracking::Track()
                     }
                     else if(pCurrentMap->KeyFramesInMap()>10)
                     {
+                        cout << "RECENTLY_LOST line:2188-->" << pCurrentMap->KeyFramesInMap() << endl;
                         // cout << "KF in map: " << pCurrentMap->KeyFramesInMap() << endl;
                         // 条件1：当前地图中关键帧数目较多（大于10） 
                         // 条件2（隐藏条件）：当前帧距离上次重定位帧超过1s（说明还比较争气，值的救）或者非IMU模式
@@ -2194,6 +2202,7 @@ void Tracking::Track()
                     }
                     else
                     {
+                        cout << "LOST line:2199" << endl;
                         mState = LOST;
                     }
                 }
@@ -2386,13 +2395,15 @@ void Tracking::Track()
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
+            bool bOK2 = bOK;
             if(bOK)
             {
                 // 局部地图跟踪
                 bOK = TrackLocalMap();
             }
-            if(!bOK)
-                cout << "Fail to track local map!" << endl;
+            if(!bOK) {
+                cout << "Fail to track local map!" << bOK2 << endl;
+            }
         }
         else
         {
@@ -2993,8 +3004,9 @@ void Tracking::CreateInitialMapMonocular()
 
     // Bundle Adjustment
     // Step 4 全局BA优化，同时优化所有位姿和三维点
-    Verbose::PrintMess("New Map created with " + to_string(mpAtlas->MapPointsInMap()) + " points", Verbose::VERBOSITY_QUIET);
-    Optimizer::GlobalBundleAdjustemnt(mpAtlas->GetCurrentMap(),20);
+    Map* mapp = mpAtlas->GetCurrentMap();
+    Verbose::PrintMess("New Map created with " + to_string(mpAtlas->MapPointsInMap()) + " points, id：" + to_string((*mapp).nNextId), Verbose::VERBOSITY_QUIET);
+    Optimizer::GlobalBundleAdjustemnt(mapp,20);
 
     // Step 5 取场景的中值深度，用于尺度归一化 
     // 为什么是 pKFini 而不是 pKCur ? 答：都可以的，内部做了位姿变换了
@@ -3184,9 +3196,10 @@ bool Tracking::TrackReferenceKeyFrame()
     int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
 
     // 匹配数目小于15，认为跟踪失败
-    if(nmatches<15)
+    //todo jon custom
+    if(nmatches<10)
     {
-        cout << "TRACK_REF_KF: Less than 15 matches!!\n";
+        cout << "TRACK_REF_KF: Less than 10 matches!!\n";
         return false;
     }
 
@@ -3390,8 +3403,9 @@ bool Tracking::TrackWithMotionModel()
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR);
 
     // If few matches, uses a wider window search
-    // 如果匹配点太少，则扩大搜索半径再来一次
-    if(nmatches<20)
+    // 如果匹配点太少，则扩大搜索半径再来一次, default:20
+    //todo jon custom
+    if(nmatches<10)
     {
         Verbose::PrintMess("Not enough matches, wider window search!!", Verbose::VERBOSITY_NORMAL);
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
@@ -3401,9 +3415,11 @@ bool Tracking::TrackWithMotionModel()
 
     }
 
-    // 这里不同于ORB-SLAM2的方式
-    if(nmatches<20)
+    // 这里不同于ORB-SLAM2的方式, default:20
+    //todo jon custom
+    if(nmatches<10)
     {
+        cout << "--------" << nmatches << endl;
         Verbose::PrintMess("Not enough matches!!", Verbose::VERBOSITY_NORMAL);
         if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
             return true;
@@ -3448,13 +3464,14 @@ bool Tracking::TrackWithMotionModel()
     if(mbOnlyTracking)
     {
         mbVO = nmatchesMap<10;
-        return nmatches>20;
+        return nmatches>15; //todo jon custom, default:20
     }
 
     if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
         return true;
     else
-        return nmatchesMap>=10;  // 匹配超过10个点就认为跟踪成功
+        //todo jon custom
+        return nmatchesMap>=8;  // 匹配超过10个点就认为跟踪成功，default:10
 }
 
 /**
@@ -3486,14 +3503,15 @@ bool Tracking::TrackLocalMap()
 
     // TOO check outliers before PO
     // 查看内外点数目，调试用
-    int aux1 = 0, aux2=0;
-    for(int i=0; i<mCurrentFrame.N; i++)
-        if( mCurrentFrame.mvpMapPoints[i])
-        {
-            aux1++;
-            if(mCurrentFrame.mvbOutlier[i])
-                aux2++;
-        }
+    //todo jon del
+//    int aux1 = 0, aux2=0;
+//    for(int i=0; i<mCurrentFrame.N; i++)
+//        if( mCurrentFrame.mvpMapPoints[i])
+//        {
+//            aux1++;
+//            if(mCurrentFrame.mvbOutlier[i])
+//                aux2++;
+//        }
 
     // 在这个函数之前，在 Relocalization、TrackReferenceKeyFrame、TrackWithMotionModel 中都有位姿优化
     // Step 3：前面新增了更多的匹配关系，BA优化得到更准确的位姿
@@ -3529,14 +3547,15 @@ bool Tracking::TrackLocalMap()
         }
     }
     // 查看内外点数目，调试用
-    aux1 = 0, aux2 = 0;
-    for(int i=0; i<mCurrentFrame.N; i++)
-        if( mCurrentFrame.mvpMapPoints[i])
-        {
-            aux1++;
-            if(mCurrentFrame.mvbOutlier[i])
-                aux2++;
-        }
+    //todo jon del
+//    aux1 = 0, aux2 = 0;
+//    for(int i=0; i<mCurrentFrame.N; i++)
+//        if( mCurrentFrame.mvpMapPoints[i])
+//        {
+//            aux1++;
+//            if(mCurrentFrame.mvbOutlier[i])
+//                aux2++;
+//        }
 
     mnMatchesInliers = 0;
 
@@ -3604,10 +3623,11 @@ bool Tracking::TrackLocalMap()
     else
     {
         //以上情况都不满足，只要跟踪的地图点大于30个就认为成功了
-        if(mnMatchesInliers<30)
+        if(mnMatchesInliers<15) {
             return false;
-        else
+        }else {
             return true;
+        }
     }
 }
 

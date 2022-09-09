@@ -35,8 +35,8 @@
             </div>
         </div>
         <script type="text/javascript">
-            const w = 480;
-            const h = 320;
+            const w = 400;
+            const h = 300;
 
             var video = document.getElementById("video");
             var cvs = document.getElementById("canvas");
@@ -51,7 +51,7 @@
             //状态 false-已关闭/未启用 true-已开启
             var state;
             //true-优先使用前置摄像头 false-强制使用后置摄像头
-            var shouldFaceUser = true;
+            var shouldFaceUser = false;
 
             //当前监听流对象
             var tmpstream;

@@ -106,7 +106,7 @@ void LocalMapping::Run()
 
         // Check if there are keyframes in the queue
         // 等待处理的关键帧列表不为空 并且imu正常
-        if(CheckNewKeyFrames() && !mbBadImu)
+        if(!mbBadImu && CheckNewKeyFrames())
         {
 #ifdef REGISTER_TIMES
             double timeLBA_ms = 0;
@@ -347,7 +347,9 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        usleep(3000);
+        if (!CheckNewKeyFrames()) {
+            usleep(2000);
+        }
     }
 
     // 设置线程已经终止
@@ -371,7 +373,8 @@ void LocalMapping::InsertKeyFrame(KeyFrame *pKF)
  */
 bool LocalMapping::CheckNewKeyFrames()
 {
-    unique_lock<mutex> lock(mMutexNewKFs);
+    //todo jon 状态/状态只读/赋值对象只读情况下，无需加锁
+    //nique_lock<mutex> lock(mMutexNewKFs);
     return(!mlNewKeyFrames.empty());
 }
 
@@ -512,7 +515,7 @@ void LocalMapping::CreateNewMapPoints()
     // For stereo inertial case 这具原注释有问题吧 应该是For Monocular case
     // 0.4版本的这个参数为20
     if(mbMonocular)
-        nn=30;
+        nn=24;
     // Step 1：在当前关键帧的共视关键帧中找到共视程度最高的nn帧相邻关键帧
     vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
@@ -1107,7 +1110,8 @@ bool LocalMapping::isStopped()
  */
 bool LocalMapping::stopRequested()
 {
-    unique_lock<mutex> lock(mMutexStop);
+    //todo jon 状态/状态只读/赋值对象只读情况下，无需加锁
+    //unique_lock<mutex> lock(mMutexStop);
     return mbStopRequested;
 }
 
@@ -1134,7 +1138,8 @@ void LocalMapping::Release()
  */
 bool LocalMapping::AcceptKeyFrames()
 {
-    unique_lock<mutex> lock(mMutexAccept);
+    ///todo jon 状态/状态只读/赋值对象只读情况下，无需加锁
+    //unique_lock<mutex> lock(mMutexAccept);
     return mbAcceptKeyFrames;
 }
 
@@ -1143,7 +1148,8 @@ bool LocalMapping::AcceptKeyFrames()
  */
 void LocalMapping::SetAcceptKeyFrames(bool flag)
 {
-    unique_lock<mutex> lock(mMutexAccept);
+    //todo jon 状态/状态只读/赋值对象只读情况下，无需加锁
+    //unique_lock<mutex> lock(mMutexAccept);
     mbAcceptKeyFrames=flag;
 }
 
@@ -1421,6 +1427,9 @@ void LocalMapping::RequestResetActiveMap(Map* pMap)
  */
 void LocalMapping::ResetIfRequested()
 {
+    if (!mbResetRequested && !mbResetRequestedActiveMap) {
+        return;
+    }
     bool executed_reset = false;
     {
         unique_lock<mutex> lock(mMutexReset);
@@ -1474,7 +1483,8 @@ void LocalMapping::ResetIfRequested()
  */
 void LocalMapping::RequestFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon 去除锁，锁值的意义？
+    //unique_lock<mutex> lock(mMutexFinish);
     mbFinishRequested = true;
 }
 
@@ -1483,7 +1493,8 @@ void LocalMapping::RequestFinish()
  */
 bool LocalMapping::CheckFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
+    //todo jon 去除锁，锁值的意义？
+    //unique_lock<mutex> lock(mMutexFinish);
     return mbFinishRequested;
 }
 
@@ -1492,9 +1503,11 @@ bool LocalMapping::CheckFinish()
  */
 void LocalMapping::SetFinish()
 {
-    unique_lock<mutex> lock(mMutexFinish);
-    mbFinished = true;    
-    unique_lock<mutex> lock2(mMutexStop);
+    //todo jon 去除锁，锁值的意义？
+    //unique_lock<mutex> lock(mMutexFinish);
+    mbFinished = true;
+    //todo jon 去除锁，锁值的意义？
+    //unique_lock<mutex> lock2(mMutexStop);
     mbStopped = true;
 }
 

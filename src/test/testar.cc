@@ -33,7 +33,7 @@ int main()
     VideoCapture capCam = cv::VideoCapture("/home/jon/slamtest.mp4");
 
     // init 系统的构造函数，将会启动其他的线程
-    ORB_SLAM3::System SLAM("../Vocabulary/ORBvoc.bin","../Examples/Monocular/TUM1.yaml",ORB_SLAM3::System::MONOCULAR,false);
+    ORB_SLAM3::System SLAM("res/ORBvoc.bin","res/TUM1.yaml",ORB_SLAM3::System::MONOCULAR,false);
 
     QueueProcess::QueueProc* qproc = new QueueProcess::QueueProc(&SLAM);
     //qproc->start();

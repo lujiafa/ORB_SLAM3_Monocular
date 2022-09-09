@@ -441,9 +441,11 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
 {
 
     {
-        unique_lock<mutex> lock(mMutexReset);
-        if(mbShutDown)
-            return Sophus::SE3f();
+        if (mbShutDown) {
+            unique_lock<mutex> lock(mMutexReset);
+            if(mbShutDown)
+                return Sophus::SE3f();
+        }
     }
     // 确保是单目或单目VIO模式
     if(mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR)
@@ -461,46 +463,50 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
 
     // Check mode change
     {
-        // 独占锁，主要是为了mbActivateLocalizationMode和mbDeactivateLocalizationMode不会发生混乱
-        unique_lock<mutex> lock(mMutexMode);
-        // mbActivateLocalizationMode为true会关闭局部地图线程，仅跟踪模式
-        if(mbActivateLocalizationMode)
-        {
-            mpLocalMapper->RequestStop();
-
-            // Wait until Local Mapping has effectively stopped
-            while(!mpLocalMapper->isStopped())
+        if (mbActivateLocalizationMode || mbDeactivateLocalizationMode) {
+            // 独占锁，主要是为了mbActivateLocalizationMode和mbDeactivateLocalizationMode不会发生混乱
+            unique_lock<mutex> lock(mMutexMode);
+            // mbActivateLocalizationMode为true会关闭局部地图线程，仅跟踪模式
+            if(mbActivateLocalizationMode)
             {
-                usleep(1000);
+                mpLocalMapper->RequestStop();
+
+                // Wait until Local Mapping has effectively stopped
+                while(!mpLocalMapper->isStopped())
+                {
+                    usleep(1000);
+                }
+                // 局部地图关闭以后，只进行追踪的线程，只计算相机的位姿，没有对局部地图进行更新
+                mpTracker->InformOnlyTracking(true);
+                // 关闭线程可以使得别的线程得到更多的资源
+                mbActivateLocalizationMode = false;
             }
-            // 局部地图关闭以后，只进行追踪的线程，只计算相机的位姿，没有对局部地图进行更新
-            mpTracker->InformOnlyTracking(true);
-            // 关闭线程可以使得别的线程得到更多的资源
-            mbActivateLocalizationMode = false;
-        }
-        if(mbDeactivateLocalizationMode)
-        {
-            mpTracker->InformOnlyTracking(false);
-            mpLocalMapper->Release();
-            mbDeactivateLocalizationMode = false;
+            if(mbDeactivateLocalizationMode)
+            {
+                mpTracker->InformOnlyTracking(false);
+                mpLocalMapper->Release();
+                mbDeactivateLocalizationMode = false;
+            }
         }
     }
 
     // Check reset
     {
-        unique_lock<mutex> lock(mMutexReset);
-        if(mbReset)
-        {
-            mpTracker->Reset();
-            mbReset = false;
-            mbResetActiveMap = false;
-        }
-        // 如果检测到重置活动地图的标志为true,将重置地图
-        else if(mbResetActiveMap)
-        {
-            cout << "SYSTEM-> Reseting active map in monocular case" << endl;
-            mpTracker->ResetActiveMap();
-            mbResetActiveMap = false;
+        if (mbReset || mbResetActiveMap) {
+            unique_lock<mutex> lock(mMutexReset);
+            if(mbReset)
+            {
+                mpTracker->Reset();
+                mbReset = false;
+                mbResetActiveMap = false;
+            }
+                // 如果检测到重置活动地图的标志为true,将重置地图
+            else if(mbResetActiveMap)
+            {
+                cout << "SYSTEM-> Reseting active map in monocular case" << endl;
+                mpTracker->ResetActiveMap();
+                mbResetActiveMap = false;
+            }
         }
     }
     // 如果是单目VIO模式，把IMU数据存储到队列mlQueueImuData
@@ -511,7 +517,7 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
     // 计算相机位姿
     Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(imToFeed,timestamp,filename);
     // 更新跟踪状态和参数
-    unique_lock<mutex> lock2(mMutexState);
+    //////unique_lock<mutex> lock2(mMutexState);//锁的意义？
     mTrackingState = mpTracker->mState;
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;

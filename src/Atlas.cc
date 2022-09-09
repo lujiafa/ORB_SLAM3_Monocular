@@ -266,11 +266,13 @@ void Atlas::clearAtlas()
 
 Map *Atlas::GetCurrentMap()
 {
-    unique_lock<mutex> lock(mMutexAtlas);
-    if (!mpCurrentMap)
-        CreateNewMap();
+    if (!mpCurrentMap) {
+        unique_lock<mutex> lock(mMutexAtlas);
+        if (!mpCurrentMap)
+            CreateNewMap();
+    }
     while (mpCurrentMap->IsBad())
-        usleep(3000);
+        usleep(1000);
 
     return mpCurrentMap;
 }

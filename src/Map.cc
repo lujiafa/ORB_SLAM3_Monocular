@@ -371,7 +371,8 @@ unsigned int Map::GetLowerKFID()
 
 int Map::GetMapChangeIndex()
 {
-    unique_lock<mutex> lock(mMutexMap);
+    //todo jon 获取状态或值信息加锁无意义
+    //unique_lock<mutex> lock(mMutexMap);
     return mnMapChange;
 }
 

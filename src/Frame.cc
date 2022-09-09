@@ -343,6 +343,7 @@ Frame::Frame(const cv::Mat &imGray, const cv::Mat &imDepth, const double &timeSt
     AssignFeaturesToGrid();
 }
 
+
 // 单目模式
 Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extractor,ORBVocabulary* voc, GeometricCamera* pCamera, cv::Mat &distCoef, const float &bf, const float &thDepth, Frame* pPrevF, const IMU::Calib &ImuCalib)
     :mpcpi(NULL),mpORBvocabulary(voc),mpORBextractorLeft(extractor),mpORBextractorRight(static_cast<ORBextractor*>(NULL)),
@@ -354,14 +355,14 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
     // Step 1 帧的ID 自增
     mnId=nNextId++;
 
-    // Step 2 计算图像金字塔的参数 
+    // Step 2 计算图像金字塔的参数
     // Scale Level Info
 	//获取图像金字塔的层数
     mnScaleLevels = mpORBextractorLeft->GetLevels();
 	//获取每层的缩放因子
     mfScaleFactor = mpORBextractorLeft->GetScaleFactor();
 	//计算每层缩放因子的自然对数
-    mfLogScaleFactor = log(mfScaleFactor);
+    mfLogScaleFactor = log(mfScaleFactor);//todo jon 似乎不需要每次都计算!
 	//获取各层图像的缩放因子
     mvScaleFactors = mpORBextractorLeft->GetScaleFactors();
 	//获取各层图像的缩放因子的倒数
@@ -373,22 +374,30 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     // ORB extraction
 #ifdef REGISTER_TIMES
+    cout <<"-23123123-------------" << endl;
     std::chrono::steady_clock::time_point time_StartExtORB = std::chrono::steady_clock::now();
 #endif
 
     // Step 3 对这个单目图像进行提取特征点, 第一个参数0-左图， 1-右图
-    //////ODO -> custom modify
-    ExtractORB(0,imGray,0,1000);
+    //todo jon custom modify
+//    ExtractORB(0,imGray,0,1000);
+//    (*mpORBextractorLeft).operatorFast(imGray, mvKeys, mDescriptors);
 
-    //////custom jon
-//    cv::Mat dst;
-//    cv::pyrDown(imGray, dst, cv::Size(imGray.cols/2,imGray.rows/2));
-//    ExtractORB(0,dst,0,1000);
-//    for(int i=0; i<mvKeys.size(); i++)
-//    {
-//        mvKeys[i].pt.x *= 2.0f;
-//        mvKeys[i].pt.y *= 2.0f;
-//    }
+    //todo jon custom
+    if (imGray.cols >= 600 || imGray.rows >= 600) {
+        cv::Size rsz(imGray.cols/2,imGray.rows/2);
+        cv::Mat dst = cv::Mat(rsz, imGray.type());
+        cv::pyrDown(imGray, dst, rsz);
+        //ExtractORB(0,dst,0,1000);
+        (*mpORBextractorLeft).operatorFast(dst, mvKeys, mDescriptors);
+        for(int i=0; i<mvKeys.size(); i++)
+        {
+            mvKeys[i].pt.x *= 2;
+            mvKeys[i].pt.y *= 2;
+        }
+    } else {
+        (*mpORBextractorLeft).operatorFast(imGray, mvKeys, mDescriptors);
+    }
 
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_EndExtORB = std::chrono::steady_clock::now();

@@ -252,7 +252,8 @@ std::map<KeyFrame*, std::tuple<int,int>>  MapPoint::GetObservations()
  */
 int MapPoint::Observations()
 {
-    unique_lock<mutex> lock(mMutexFeatures);
+    //todo jon 去除锁，锁值的意义？
+    //unique_lock<mutex> lock(mMutexFeatures);
     return nObs;
 }
 
@@ -294,8 +295,9 @@ void MapPoint::SetBadFlag()
  */
 MapPoint* MapPoint::GetReplaced()
 {
-    unique_lock<mutex> lock1(mMutexFeatures);
-    unique_lock<mutex> lock2(mMutexPos);
+    //todo jon 去除两个锁，锁值的意义？
+    //unique_lock<mutex> lock1(mMutexFeatures);
+    //unique_lock<mutex> lock2(mMutexPos);
     return mpReplaced;
 }
 

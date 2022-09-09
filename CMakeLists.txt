@@ -7,7 +7,7 @@ ENDIF()
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wall -s -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wall -s -pthread -march=native ")
 set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 
 
@@ -36,7 +36,7 @@ include_directories(
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output)
 ### test
-add_executable(orbslam
+add_library(orbslam SHARED
         #DBoW2
         Thirdparty/DBoW2/DBoW2/BowVector.cpp
         Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
@@ -210,8 +210,8 @@ add_executable(orbslam
         include/Settings.h
 
         src/test/QueueProc.cc
-        src/test/testar.cc
-        #src/test/sharedfunc.cc
+        #src/test/testar.cc
+        src/test/sharedfunc.cc
         )
 target_link_libraries(orbslam
         #        ${OpenCV_LIBS}
