@@ -1,0 +1,167 @@
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <style type="text/css">
+            .icard {
+                float: left;
+                border: 1px solid #333;
+                margin-right: 5px;
+            }
+        </style>
+        <script type="text/javascript" src="./orbslam.js"></script>
+    </head>
+    <body>
+        <div>
+            <button onclick="sefun()" id="btn-switch">开始</button>
+        </div>
+        <div>
+            <b>FPS:</b><span id="show-fps">0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <b>耗时（毫秒）/帧：</b><span id="show-perMT">0</span>
+        </div>
+        <div>
+            <span id="show-result"></span>
+        </div>
+        <br/>
+        <div>
+            <div class="icard">
+                <h5>视频帧流(video)</h5>
+                
+            <video id="video" autoplay="autoplay"></video>
+            </div>
+            <div class="icard">
+                <h5>视频帧渲染过渡画布(canvas)</h5>
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+        <script type="text/javascript">
+            const w = 400;
+            const h = 300;
+
+            var video = document.getElementById("video");
+            var cvs = document.getElementById("canvas");
+            //获得Canvas对象
+            var ctx = cvs.getContext('2d');
+            cvs.width = w;
+            cvs.height = h;
+
+            //状态 false-已关闭/未启用 true-已开启
+            var state;
+            //true-优先使用前置摄像头 false-强制使用后置摄像头
+            var shouldFaceUser = true;
+
+            //当前监听流对象
+            var tmpstream;
+            //监听器
+            var tmpplaylistener;
+            //定时器
+            var tmpInv;
+            const queue = [];
+            var tmppInv;
+            let processState;
+            //memery
+            var memPtr;
+
+            var showTxtEl;
+            var showPerMTEl;
+
+            function trackCallback(px,py,pz,rx,ry,rz) {
+                let txt = "px:" + px * 1000 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rx:" + rx + "<br>"
+                        + "py:" + py * 1000 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ry:" + ry + "<br>"
+                        + "pz:" + pz * 1000 + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rz:" + rz;
+                document.getElementById("show-result").innerHTML = txt;
+            }
+
+            function sefun() {
+                state = !state;
+                document.getElementById("btn-switch").innerHTML = state ? "关闭" : "开启";
+                if (state) {
+                    //参考资料：https://developer.mozilla.org/zh-CN/docs/Web/API/MediaDevices/getUserMedia
+                    let constraints = { audio: false, video: {facingMode: shouldFaceUser ?'user':{exact:"environment"}}};
+                    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                        video.srcObject = (tmpstream = stream);
+                        video.onloadedmetadata = function(e) {
+                            video.play();
+                        }
+                    }).catch(function(err) {
+                        console.log(err.message);
+                    });
+                    //视频开始事件
+                    tmpplaylistener = video.addEventListener('play', function() {
+                        tmpInv = setInterval(function() {
+                            var vw = self.video.videoWidth;
+                            var vh = self.video.videoHeight;
+                            ctx.drawImage(video, 0, 0, vw, vh, 0, 0, w, h);
+                            if (queue.length < 2) {
+                                queue.push(ctx.getImageData(0, 0, w, h));
+                            } else {
+                                console.log("queue overflow.");
+                            }
+                        }, 1);
+                        tmppInv = setInterval(() => {
+                            var d = queue.shift();
+                            if (!processState && d) {
+                                processState = true;
+                                wasmProcess(d, w, h);
+                                processState = false;
+                            }
+                        }, 1);
+                    });
+                } else {
+                    if (tmpstream) {
+                        tmpstream.getTracks().forEach(t => {
+                            t.stop();
+                        });
+                        video.removeEventListener("play", tmpplaylistener);
+                        clearInterval(tmpInv);
+                        clearInterval(tmppInv);
+                        if (memPtr != undefined) {
+                            Module._free(memPtr)
+                            memPtr = undefined;
+                        }
+                    }
+                }
+            }
+
+            var lstMin;
+            var lstCount;
+            function wasmProcess(imgDataBytes, width, height) {
+                // 参考资料：https://developer.mozilla.org/en-US/docs/WebAssembly/existing_C_to_wasm
+                let tmpPtr = setWasmHeap(imgDataBytes.data);
+                // 调用c++暴露的方法
+                let bt = new Date().getTime();
+                var position = new Array(0.0,0.0,0.0);
+                var rotation = new Array(0.0,0.0,0.0);
+                let resPtr = Module._track(tmpPtr, width, height, position, rotation);
+                let et = new Date().getTime();
+                //console.log(position, "-", rotation)
+
+                // statics per millisecond
+                if (!showPerMTEl)
+                    showPerMTEl = document.getElementById("show-perMT");
+                showPerMTEl.innerText = (et - bt);
+                // statics FPS
+                let crrMin = new Number(et / 1000).toFixed(0);
+                if (lstMin != crrMin) {
+                    if (!showTxtEl)
+                        showTxtEl = document.getElementById("show-fps");
+                    showTxtEl.innerText = lstCount;
+                    lstCount = 0;
+                    lstMin = crrMin;
+                }
+                ++ lstCount;
+                //...响应结果处理
+
+            }
+
+            // 将js的数据复制到wasm的内存(这里heapBytes.byteoffset传递的是wasm内存中数组的指针)
+            function setWasmHeap(imgDataBytesData) {
+                if (memPtr == undefined) {
+                    const bytesLen = imgDataBytesData.byteLength;
+                    memPtr = Module._malloc(bytesLen);
+                }
+                Module.HEAPU8.set(imgDataBytesData, memPtr);
+                return memPtr;
+            }
+        </script>
+    </body>
+</html>

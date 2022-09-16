@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<!-- three.js library -->
+<script src='./three.min.js'></script>
+<script type="text/javascript" src="../orbslam.js"></script>
+<!-- ar.js -->
+<script src="./ar-threex.js"></script>
+<script>
+    //THREEx.ArToolkitContext.baseURL = '../'
+</script>
+
+<body style='font-family: Monospace;'>
+    <canvas id="canvas" style="display: none;" width="400" height="300"></canvas>
+    <script>
+        //////////////////////////////////////////////////////////////////////////////////
+        //		Init
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // init renderer
+        var renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true
+        });
+        renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+        renderer.setSize(640, 480);
+        renderer.domElement.style.position = 'absolute'
+        renderer.domElement.style.top = '0px'
+        renderer.domElement.style.left = '0px'
+        document.body.appendChild(renderer.domElement);
+
+        // array of functions for the rendering loop
+        var onRenderFcts = [];
+        var arToolkitContext, arMarkerControls;
+
+        // init scene and camera
+        var scene = new THREE.Scene();
+
+        //////////////////////////////////////////////////////////////////////////////////
+        //		Initialize a basic camera
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Create a camera
+        var camera = new THREE.Camera();
+        scene.add(camera);
+
+        ////////////////////////////////////////////////////////////////////////////////
+        //          handle arToolkitSource
+        ////////////////////////////////////////////////////////////////////////////////
+        var arToolkitSource = new THREEx.ArToolkitSource({
+            // to read from the webcam
+            sourceType: 'webcam',
+            sourceWidth: window.innerWidth > window.innerHeight ? 640 : 480,
+            sourceHeight: window.innerWidth > window.innerHeight ? 480 : 640,
+        })
+
+        var video;
+        var cvs = document.getElementById("canvas");
+        var ctx = cvs.getContext('2d');
+
+        arToolkitSource.init(function onReady() {
+            arToolkitSource.domElement.addEventListener('canplay', (vd) => {
+                video = vd.target;
+                console.log(
+                    'canplay',
+                    'actual source dimensions',
+                    arToolkitSource.domElement.videoWidth,
+                    arToolkitSource.domElement.videoHeight
+                );
+
+            });
+            window.arToolkitSource = arToolkitSource;
+            onResize()
+        })
+
+        // handle resize
+        window.addEventListener('resize', function () {
+            onResize()
+        })
+
+        function onResize() {
+            arToolkitSource.onResizeElement();
+            arToolkitSource.copyElementSizeTo(renderer.domElement);
+        }
+
+        const material = new THREE.MeshBasicMaterial();
+        material.side = THREE.DoubleSide;
+        material.map = new THREE.TextureLoader().load('./m.jpg');
+        material.color = new THREE.Color(0xAD50FF)
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), material)
+        cube.position.set(0, 0, 0);
+        cube.rotation.y = 0.3;
+        cube.rotation.z = 0.3;
+        cube.castShadow = true;
+        scene.add(cube);
+
+        // render the scene
+        onRenderFcts.push(function () {
+            renderer.render(scene, camera);
+        })
+
+
+        function trackCallback(arr) {
+            camera.projectionMatrix.set(arr[0], arr[1],arr[2],arr[3],
+                arr[4], arr[5],arr[6],arr[7],
+                arr[8], arr[9],arr[10],arr[11],
+                arr[12], arr[13],arr[14],arr[15]);
+        }
+        function trackCallback2(arr) {
+            camera.position.x = arr[0];
+            camera.position.y = arr[1];
+            camera.position.z = arr[2];
+            camera.rotation.x = arr[3];
+            camera.rotation.y = arr[4];
+            camera.rotation.z = arr[5];
+        }
+
+        // 将js的数据复制到wasm的内存(这里heapBytes.byteoffset传递的是wasm内存中数组的指针)
+        function setWasmHeap(imgDataBytesData) {
+            let memPtr;
+            //if (memPtr == undefined) {
+                const bytesLen = imgDataBytesData.byteLength;
+                memPtr = Module._malloc(bytesLen);
+            //}
+            Module.HEAPU8.set(imgDataBytesData, memPtr);
+            return memPtr;
+        }
+
+        // run the rendering loop
+        var inited = false;
+        var lastTimeMsec = null
+        requestAnimationFrame(function animate(nowMsec) {
+            if (video) {
+                if (!inited) {
+                    Module._init();
+                    inited = true;
+                }
+                let vw = video.videoWidth;
+                let vh = video.videoHeight;
+                let w =400;
+                let h = 300;
+                ctx.drawImage(video, 0, 0, vw, vh, 0, 0, w, h);
+                let imgDataBytes = ctx.getImageData(0, 0, w, h);
+                let tmpPtr = setWasmHeap(imgDataBytes.data);
+                let resPtr = Module._track(tmpPtr, w, h, true);
+                //console.log(resPtr)
+                Module._free(tmpPtr);
+            }
+
+            // keep looping
+            requestAnimationFrame(animate);
+            // measure time
+            lastTimeMsec = lastTimeMsec || nowMsec - 1000 / 60
+            var deltaMsec = Math.min(200, nowMsec - lastTimeMsec)
+            lastTimeMsec = nowMsec
+            // call each update function
+            onRenderFcts.forEach(function (onRenderFct) {
+                onRenderFct(deltaMsec / 1000, nowMsec / 1000)
+            })
+        })
+
+    </script>
+</body>

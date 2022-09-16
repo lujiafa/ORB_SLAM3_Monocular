@@ -9,7 +9,7 @@ MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall -O2 -march=native ")
 #tmp -pthread
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2 -s NO_EXIT_RUNTIME=1 -s LLD_REPORT_UNDEFINED -s EXPORTED_FUNCTIONS=['_track','_resetTrack','_malloc','_free'] -s ASSERTIONS=1 --preload-file output/res@res -pthread -s ALLOW_MEMORY_GROWTH=1 -s PTHREAD_POOL_SIZE=4 -s TOTAL_MEMORY=128MB -o ${PROJECT_SOURCE_DIR}/output")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2 -s NO_EXIT_RUNTIME=1 -s LLD_REPORT_UNDEFINED -s EXPORTED_FUNCTIONS=['_init','_track','_atrack','_resetTrack','_malloc','_free','_shutdown'] -s ASSERTIONS=1 --preload-file output/res@res -pthread -s ALLOW_MEMORY_GROWTH=1 -s PTHREAD_POOL_SIZE=4 -s TOTAL_MEMORY=128MB -o ${PROJECT_SOURCE_DIR}/output")
 
 set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 

@@ -6,37 +6,38 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF()
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -Wall -s -pthread -march=native ")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall -O2 -march=native ")
+#tmp -pthread
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2 -s NO_EXIT_RUNTIME=1 -s LLD_REPORT_UNDEFINED -s EXPORTED_FUNCTIONS=['_init','_track','_atrack','_resetTrack','_malloc','_free','_shutdown'] -s ASSERTIONS=1 --preload-file output/res@res -pthread -s ALLOW_MEMORY_GROWTH=1 -s PTHREAD_POOL_SIZE=4 -s TOTAL_MEMORY=128MB -o ${PROJECT_SOURCE_DIR}/output")
+
 set(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -ldl")
 
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/wasm)
 
-set(CMAKE_CXX_STANDARD 11)
+#find_package(OpenCV QUIET)
+#if(NOT OpenCV_FOUND)
+#   message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
+#endif()
 
-
-LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
-
-find_package(OpenCV QUIET)
-if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
-endif()
-find_package(Eigen3 REQUIRED)
-find_package(Pangolin REQUIRED)
-
+#find_package(Eigen3 REQUIRED)
+#find_package(Pangolin REQUIRED)
 include_directories(
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/include
+        /usr/include/eigen3
+        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/DUtils
+        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/DBoW2
         ${PROJECT_SOURCE_DIR}/include/CameraModels
         ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
-        ${EIGEN3_INCLUDE_DIR}
-        ${Pangolin_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIRS}
+        ${PROJECT_SOURCE_DIR}/output/wasminclude
 )
+
 
 # Build examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output)
 ### test
-add_library(orbslam SHARED
+add_executable(orbslam
         #DBoW2
         Thirdparty/DBoW2/DBoW2/BowVector.cpp
         Thirdparty/DBoW2/DBoW2/FeatureVector.cpp
@@ -195,7 +196,6 @@ add_library(orbslam SHARED
         include/Frame.h
         include/KeyFrameDatabase.h
         include/Sim3Solver.h
-        #include/Viewer.h
         include/ImuTypes.h
         include/G2oTypes.h
         include/CameraModels/GeometricCamera.h
@@ -210,21 +210,14 @@ add_library(orbslam SHARED
         include/Settings.h
 
         src/test/QueueProc.cc
-        #src/test/testar.cc
-        src/test/sharedfunc.cc
-        )
-target_link_libraries(orbslam
-        #        ${OpenCV_LIBS}
-        #        ${Pangolin_LIBRARIES}
-        #        -lboost_serialization
-        #        -lcrypto
+        src/test/wasmfunc.cc)
 
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libboost_serialization.so
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libboost_system.so
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libz.so
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_core.so.3.4
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_features2d.so.3.4
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_imgproc.so.3.4
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_calib3d.so.3.4
-        ${PROJECT_SOURCE_DIR}/output/sharedlib/libopencv_videoio.so.3.4
+target_link_libraries(orbslam
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libopencv_core.a
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libopencv_imgproc.a
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libopencv_features2d.a
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libopencv_calib3d.a
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libz.a
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libboost_serialization.bc
+        ${PROJECT_SOURCE_DIR}/output/wasmlib/libboost_system.bc
         )
