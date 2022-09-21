@@ -60,10 +60,10 @@ int track(int* ptr, int w, int h, bool stype = false)
         if (stype) {
             trackEMJS2(Tcw.at<float>(0,3), Tcw.at<float>(1,3), Tcw.at<float>(2,3), se3f.angleX(), se3f.angleY(), se3f.angleZ());
         } else {
-            trackEMJS(Tcw.at<float>(0,0), Tcw.at<float>(1,0), Tcw.at<float>(2,0), 0.0,
-                      Tcw.at<float>(0,1), Tcw.at<float>(1,1), Tcw.at<float>(2,1), 0.0,
-                      Tcw.at<float>(0,2), Tcw.at<float>(1,2), Tcw.at<float>(2,2), 0.0,
-                      Tcw.at<float>(0,3), Tcw.at<float>(1,3), Tcw.at<float>(2,3), 0.0);
+            trackEMJS(Tcw.at<float>(0,0), Tcw.at<float>(1,0), Tcw.at<float>(2,0), Tcw.at<float>(3,0),
+                      Tcw.at<float>(0,1), Tcw.at<float>(1,1), Tcw.at<float>(2,1), Tcw.at<float>(3,1),
+                      Tcw.at<float>(0,2), Tcw.at<float>(1,2), Tcw.at<float>(2,2), Tcw.at<float>(3,2),
+                      Tcw.at<float>(0,3), Tcw.at<float>(1,3), Tcw.at<float>(2,3), Tcw.at<float>(3,3));
         }
         return 1;
     } catch (std::exception e) {

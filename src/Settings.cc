@@ -224,10 +224,10 @@ void Settings::readCamera1(cv::FileStorage &fSettings)
         cameraType_ = PinHole;
 
         // Read intrinsic parameters
-        float fx = readParameter<float>(fSettings, "Camera1.fx", found);
-        float fy = readParameter<float>(fSettings, "Camera1.fy", found);
-        float cx = readParameter<float>(fSettings, "Camera1.cx", found);
-        float cy = readParameter<float>(fSettings, "Camera1.cy", found);
+        float fx = readParameter<float>(fSettings, "Camera.fx", found);
+        float fy = readParameter<float>(fSettings, "Camera.fy", found);
+        float cx = readParameter<float>(fSettings, "Camera.cx", found);
+        float cy = readParameter<float>(fSettings, "Camera.cy", found);
 
         vCalibration = {fx, fy, cx, cy};
 
@@ -235,23 +235,23 @@ void Settings::readCamera1(cv::FileStorage &fSettings)
         originalCalib1_ = new Pinhole(vCalibration);
 
         // Check if it is a distorted PinHole
-        readParameter<float>(fSettings, "Camera1.k1", found, false);
+        readParameter<float>(fSettings, "Camera.k1", found, false);
         if (found)
         {
-            readParameter<float>(fSettings, "Camera1.k3", found, false);
+            readParameter<float>(fSettings, "Camera.k3", found, false);
             if (found)
             {
                 vPinHoleDistorsion1_.resize(5);
-                vPinHoleDistorsion1_[4] = readParameter<float>(fSettings, "Camera1.k3", found);
+                vPinHoleDistorsion1_[4] = readParameter<float>(fSettings, "Camera.k3", found);
             }
             else
             {
                 vPinHoleDistorsion1_.resize(4);
             }
-            vPinHoleDistorsion1_[0] = readParameter<float>(fSettings, "Camera1.k1", found);
-            vPinHoleDistorsion1_[1] = readParameter<float>(fSettings, "Camera1.k2", found);
-            vPinHoleDistorsion1_[2] = readParameter<float>(fSettings, "Camera1.p1", found);
-            vPinHoleDistorsion1_[3] = readParameter<float>(fSettings, "Camera1.p2", found);
+            vPinHoleDistorsion1_[0] = readParameter<float>(fSettings, "Camera.k1", found);
+            vPinHoleDistorsion1_[1] = readParameter<float>(fSettings, "Camera.k2", found);
+            vPinHoleDistorsion1_[2] = readParameter<float>(fSettings, "Camera.p1", found);
+            vPinHoleDistorsion1_[3] = readParameter<float>(fSettings, "Camera.p2", found);
         }
 
         // Check if we need to correct distortion from the images
@@ -265,10 +265,10 @@ void Settings::readCamera1(cv::FileStorage &fSettings)
         cameraType_ = Rectified;
 
         // Read intrinsic parameters
-        float fx = readParameter<float>(fSettings, "Camera1.fx", found);
-        float fy = readParameter<float>(fSettings, "Camera1.fy", found);
-        float cx = readParameter<float>(fSettings, "Camera1.cx", found);
-        float cy = readParameter<float>(fSettings, "Camera1.cy", found);
+        float fx = readParameter<float>(fSettings, "Camera.fx", found);
+        float fy = readParameter<float>(fSettings, "Camera.fy", found);
+        float cx = readParameter<float>(fSettings, "Camera.cx", found);
+        float cy = readParameter<float>(fSettings, "Camera.cy", found);
 
         vCalibration = {fx, fy, cx, cy};
 
@@ -282,15 +282,15 @@ void Settings::readCamera1(cv::FileStorage &fSettings)
         cameraType_ = KannalaBrandt;
 
         // Read intrinsic parameters
-        float fx = readParameter<float>(fSettings, "Camera1.fx", found);
-        float fy = readParameter<float>(fSettings, "Camera1.fy", found);
-        float cx = readParameter<float>(fSettings, "Camera1.cx", found);
-        float cy = readParameter<float>(fSettings, "Camera1.cy", found);
+        float fx = readParameter<float>(fSettings, "Camera.fx", found);
+        float fy = readParameter<float>(fSettings, "Camera.fy", found);
+        float cx = readParameter<float>(fSettings, "Camera.cx", found);
+        float cy = readParameter<float>(fSettings, "Camera.cy", found);
 
-        float k0 = readParameter<float>(fSettings, "Camera1.k1", found);
-        float k1 = readParameter<float>(fSettings, "Camera1.k2", found);
-        float k2 = readParameter<float>(fSettings, "Camera1.k3", found);
-        float k3 = readParameter<float>(fSettings, "Camera1.k4", found);
+        float k0 = readParameter<float>(fSettings, "Camera.k1", found);
+        float k1 = readParameter<float>(fSettings, "Camera.k2", found);
+        float k2 = readParameter<float>(fSettings, "Camera.k3", found);
+        float k3 = readParameter<float>(fSettings, "Camera.k4", found);
 
         vCalibration = {fx, fy, cx, cy, k0, k1, k2, k3};
 
@@ -299,8 +299,8 @@ void Settings::readCamera1(cv::FileStorage &fSettings)
 
         if (sensor_ == System::STEREO || sensor_ == System::IMU_STEREO)
         {
-            int colBegin = readParameter<int>(fSettings, "Camera1.overlappingBegin", found);
-            int colEnd = readParameter<int>(fSettings, "Camera1.overlappingEnd", found);
+            int colBegin = readParameter<int>(fSettings, "Camera.overlappingBegin", found);
+            int colEnd = readParameter<int>(fSettings, "Camera.overlappingEnd", found);
             vector<int> vOverlapping = {colBegin, colEnd};
 
             static_cast<KannalaBrandt8 *>(calibration1_)->mvLappingArea = vOverlapping;
@@ -360,10 +360,10 @@ void Settings::readCamera2(cv::FileStorage &fSettings)
         float cx = readParameter<float>(fSettings, "Camera2.cx", found);
         float cy = readParameter<float>(fSettings, "Camera2.cy", found);
 
-        float k0 = readParameter<float>(fSettings, "Camera1.k1", found);
-        float k1 = readParameter<float>(fSettings, "Camera1.k2", found);
-        float k2 = readParameter<float>(fSettings, "Camera1.k3", found);
-        float k3 = readParameter<float>(fSettings, "Camera1.k4", found);
+        float k0 = readParameter<float>(fSettings, "Camera.k1", found);
+        float k1 = readParameter<float>(fSettings, "Camera.k2", found);
+        float k2 = readParameter<float>(fSettings, "Camera.k3", found);
+        float k3 = readParameter<float>(fSettings, "Camera.k4", found);
 
         vCalibration = {fx, fy, cx, cy, k0, k1, k2, k3};
 

@@ -15,10 +15,9 @@ namespace QueueProcess {
     class QueueProc {
     private:
         ORB_SLAM3::System* SLAM;
-        bool state = false;
+        bool startedThread = false;
         std::thread* ithread;
         std::queue<Mat> pqueue;
-        std::queue<Sophus::SE3f> rqueue;
 
         bool showKeys = false;
         bool showFps = true;
@@ -37,49 +36,38 @@ namespace QueueProcess {
             return proc(im);
         }
 
-        void startAsync() {
-            if (!state) {
-                state = true;
-                ithread = new thread(&QueueProcess::QueueProc::procTask, this);
-            }
-        }
-
-        bool push(Mat& im) {
-            if (pqueue.size() < 5) {
+        bool push(Mat& im, void rc(Sophus::SE3f& se3f)) {
+            if (pqueue.size() < 10) {
                 pqueue.push(im);
                 return true;
+            }
+            if (!startedThread) {
+                startedThread = true;
+                ithread = new thread(&QueueProcess::QueueProc::procTask, this, rc);
             }
             return false;
         }
 
-        Sophus::SE3f& get() {
-            return rqueue.front();
-        }
-
-        void stopAsync() {
-            state = false;
+        void shutdownAsync() {
+            if (!startedThread)
+                return;
+            startedThread = false;
             ithread->join();
             ithread = nullptr;
             while (!pqueue.empty()) {
                 pqueue.pop();
-            }
-            while (!rqueue.empty()) {
-                rqueue.pop();
             }
         }
     private:
         time_t lastProcSec;
         int fpsNum;
 
-        void procTask() {
-            time_t tmpCurrTime;
-            int tmpNum;
-
+        void procTask(void rc(Sophus::SE3f& se3f)) {
             cv::Mat im;
             vector<ORB_SLAM3::MapPoint*> vMPs;
             vector<cv::KeyPoint> vKeys;
             while (true) {
-                if (!state)
+                if (!startedThread)
                     break;
                 try {
                     if (pqueue.empty()) {
@@ -93,10 +81,7 @@ namespace QueueProcess {
                         continue;
                     }
                     Sophus::SE3f& se3f = proc(im);
-                    if (rqueue.size() >= 5) {
-                        rqueue.pop();
-                    }
-                    rqueue.push(se3f);
+                    rc(se3f);
                 } catch (exception e) {
                     cout << e.what() << endl;
                 }

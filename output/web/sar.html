@@ -35,12 +35,13 @@
         // init scene and camera
         var scene = new THREE.Scene();
 
-        //////////////////////////////////////////////////////////////////////////////////
-        //		Initialize a basic camera
-        //////////////////////////////////////////////////////////////////////////////////
-
         // Create a camera
-        var camera = new THREE.Camera();
+        var fov = 45,//拍摄距离  视野角值越大，场景中的物体越小
+            near = 0.01,//摄像机视锥体近端面
+            far = 1000,//摄像机视锥体远端面
+            aspect =  window.innerWidth / window.innerHeight; //纵横比
+        var camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
+        // var camera = new THREE.Camera();
         scene.add(camera);
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -66,10 +67,9 @@
                     arToolkitSource.domElement.videoWidth,
                     arToolkitSource.domElement.videoHeight
                 );
-
+                onResize();
             });
             window.arToolkitSource = arToolkitSource;
-            onResize()
         })
 
         // handle resize
@@ -86,8 +86,8 @@
         material.side = THREE.DoubleSide;
         material.map = new THREE.TextureLoader().load('./m.jpg');
         material.color = new THREE.Color(0xAD50FF)
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), material)
-        cube.position.set(0, 0, 0);
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), material)
+        cube.position.set(0, 0, -0.5);
         cube.rotation.y = 0.3;
         cube.rotation.z = 0.3;
         cube.castShadow = true;
@@ -100,18 +100,34 @@
 
 
         function trackCallback(arr) {
-            camera.projectionMatrix.set(arr[0], arr[1],arr[2],arr[3],
-                arr[4], arr[5],arr[6],arr[7],
-                arr[8], arr[9],arr[10],arr[11],
-                arr[12], arr[13],arr[14],arr[15]);
+            //console.log(arr)
+            const m = new THREE.Matrix4();
+            // m.set(arr[0], arr[1],arr[2],arr[3],
+            //     arr[4], arr[5],arr[6],arr[7],
+            //     arr[8], arr[9],arr[10],arr[11],
+            //     arr[12], arr[13],arr[14],arr[15]);
+
+            m.set(arr[0], arr[4], arr[8], arr[12],
+                arr[1], arr[5],arr[9],arr[13],
+                arr[2], arr[6],arr[10],arr[14],
+                0, 0,0,1);
+            //将当前矩阵翻转为它的逆矩阵
+            const nm = m.invert();
+            const pv = new THREE.Vector3();
+            pv.setFromMatrixColumn(nm, 3);
+            camera.position.x = pv.x;
+            camera.position.y = -pv.y;
+            camera.position.z = -pv.z;
+
         }
         function trackCallback2(arr) {
             camera.position.x = arr[0];
             camera.position.y = arr[1];
             camera.position.z = arr[2];
-            camera.rotation.x = arr[3];
-            camera.rotation.y = arr[4];
-            camera.rotation.z = arr[5];
+            camera.rotateX(arr[3]);
+            camera.rotateY(arr[4]);
+            camera.rotateZ(arr[5]);
+            //console.log(camera.position.x, camera.position.y, camera.position.z)
         }
 
         // 将js的数据复制到wasm的内存(这里heapBytes.byteoffset传递的是wasm内存中数组的指针)
@@ -136,12 +152,12 @@
                 }
                 let vw = video.videoWidth;
                 let vh = video.videoHeight;
-                let w =400;
+                let w = 400;
                 let h = 300;
                 ctx.drawImage(video, 0, 0, vw, vh, 0, 0, w, h);
                 let imgDataBytes = ctx.getImageData(0, 0, w, h);
                 let tmpPtr = setWasmHeap(imgDataBytes.data);
-                let resPtr = Module._track(tmpPtr, w, h, true);
+                let resPtr = Module._track(tmpPtr, w, h, false);
                 //console.log(resPtr)
                 Module._free(tmpPtr);
             }

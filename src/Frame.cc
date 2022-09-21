@@ -380,24 +380,24 @@ Frame::Frame(const cv::Mat &imGray, const double &timeStamp, ORBextractor* extra
 
     // Step 3 对这个单目图像进行提取特征点, 第一个参数0-左图， 1-右图
     //todo jon custom modify
-//    ExtractORB(0,imGray,0,1000);
+    ExtractORB(0,imGray,0,1000);
 //    (*mpORBextractorLeft).operatorFast(imGray, mvKeys, mDescriptors);
 
     //todo jon custom
-    if (imGray.cols >= 600 || imGray.rows >= 600) {
-        cv::Size rsz(imGray.cols/2,imGray.rows/2);
-        cv::Mat dst = cv::Mat(rsz, imGray.type());
-        cv::pyrDown(imGray, dst, rsz);
-        //ExtractORB(0,dst,0,1000);
-        (*mpORBextractorLeft).operatorFast(dst, mvKeys, mDescriptors);
-        for(int i=0; i<mvKeys.size(); i++)
-        {
-            mvKeys[i].pt.x *= 2;
-            mvKeys[i].pt.y *= 2;
-        }
-    } else {
-        (*mpORBextractorLeft).operatorFast(imGray, mvKeys, mDescriptors);
-    }
+//    if (imGray.cols >= 600 || imGray.rows >= 600) {
+//        cv::Size rsz(imGray.cols/2,imGray.rows/2);
+//        cv::Mat dst = cv::Mat(rsz, imGray.type());
+//        cv::pyrDown(imGray, dst, rsz);
+//        //ExtractORB(0,dst,0,1000);
+//        (*mpORBextractorLeft).operatorFast(dst, mvKeys, mDescriptors);
+//        for(int i=0; i<mvKeys.size(); i++)
+//        {
+//            mvKeys[i].pt.x *= 2;
+//            mvKeys[i].pt.y *= 2;
+//        }
+//    } else {
+//        (*mpORBextractorLeft).operatorFast(imGray, mvKeys, mDescriptors);
+//    }
 
 #ifdef REGISTER_TIMES
     std::chrono::steady_clock::time_point time_EndExtORB = std::chrono::steady_clock::now();
