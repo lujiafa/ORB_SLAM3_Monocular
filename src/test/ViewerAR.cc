@@ -279,7 +279,9 @@ namespace ORB_SLAM3
         struct tm *p;
         time(&timep);
         timep = mktime(gmtime(&timep));
-        Sophus::SE3f se3f = mpSystem->TrackMonocular(im, timep);
+        Mat tim;
+        cv::cvtColor(im, tim, CV_RGB2BGR);
+        Sophus::SE3f se3f = mpSystem->TrackMonocular(tim, timep);
         Tcw = ORB_SLAM3::Converter::toCvMat(se3f.matrix());
 //        Eigen::Matrix4f Tcw_Matrix = se3f.matrix();
 //        cv::eigen2cv(Tcw_Matrix, Tcw);

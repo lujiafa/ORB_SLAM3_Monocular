@@ -2133,7 +2133,6 @@ void Tracking::Track()
         // tracking 类构造时默认为false。在viewer中有个开关ActivateLocalizationMode，可以控制是否开启mbOnlyTracking
         if(!mbOnlyTracking)
         {
-
             // State OK
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
@@ -2158,7 +2157,7 @@ void Tracking::Track()
                     //Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackReferenceKeyFrame();
                     if(!bOK) {
-                        cout << "ref key fail" << endl;
+                        cout << "reference key tracking fail" << endl;
                     }
                 }
                 else
@@ -2172,7 +2171,7 @@ void Tracking::Track()
                     if(!bOK)
                         bOK = TrackReferenceKeyFrame();  // 根据恒速模型失败了，只能根据参考关键帧来跟踪
                     if(!bOK) {
-                        cout << "hensu key fail" << endl;
+                        cout << "Motion model tracking fail" << endl;
                     }
                 }
 
@@ -2212,6 +2211,7 @@ void Tracking::Track()
                 // 如果是RECENTLY_LOST状态
                 if (mState == RECENTLY_LOST)
                 {
+                    cout << "lost---->RECENTLY_LOST" << endl;
                     Verbose::PrintMess("Lost for a short time", Verbose::VERBOSITY_NORMAL);
                     // bOK先置为true
                     bOK = true;
@@ -2251,6 +2251,7 @@ void Tracking::Track()
                 }
                 else if (mState == LOST)  // 上一帧为最近丢失且重定位失败时
                 {
+                    cout << "lost---->LOST" << endl;
                     // Step 6.6 如果是LOST状态
                     // 开启一个新地图
                     Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
@@ -3196,10 +3197,10 @@ bool Tracking::TrackReferenceKeyFrame()
     int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
 
     // 匹配数目小于15，认为跟踪失败
-    //todo jon custom
-    if(nmatches<10)
+    //todo jon custom, default: <15
+    if(nmatches<6)
     {
-        cout << "TRACK_REF_KF: Less than 10 matches!!\n";
+        cout << "TRACK_REF_KF: Less than 6 matches!!\n";
         return false;
     }
 
@@ -3250,7 +3251,8 @@ bool Tracking::TrackReferenceKeyFrame()
     if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
         return true;
     else
-        return nmatchesMap>=10;  // 跟踪成功的数目超过10才认为跟踪成功，否则跟踪失败
+        //todo jon custom, default: >=10
+        return nmatchesMap>=6;  // 跟踪成功的数目超过10才认为跟踪成功，否则跟踪失败
 }
 
 /**
@@ -3397,15 +3399,15 @@ bool Tracking::TrackWithMotionModel()
     if(mSensor==System::STEREO)
         th=7;
     else
-        th=15;
+        th=20;//todo jon custom. default: 15
 
     // Step 3：用上一帧地图点进行投影匹配，如果匹配点不够，则扩大搜索半径再来一次
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR);
 
     // If few matches, uses a wider window search
     // 如果匹配点太少，则扩大搜索半径再来一次, default:20
-    //todo jon custom
-    if(nmatches<10)
+    //todo jon custom, default: <20
+    if(nmatches<6)
     {
         Verbose::PrintMess("Not enough matches, wider window search!!", Verbose::VERBOSITY_NORMAL);
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
@@ -3416,8 +3418,8 @@ bool Tracking::TrackWithMotionModel()
     }
 
     // 这里不同于ORB-SLAM2的方式, default:20
-    //todo jon custom
-    if(nmatches<10)
+    //todo jon custom, default: <20
+    if(nmatches<6)
     {
         cout << "--------" << nmatches << endl;
         Verbose::PrintMess("Not enough matches!!", Verbose::VERBOSITY_NORMAL);
@@ -3464,14 +3466,14 @@ bool Tracking::TrackWithMotionModel()
     if(mbOnlyTracking)
     {
         mbVO = nmatchesMap<10;
-        return nmatches>15; //todo jon custom, default:20
+        return nmatches>6; //todo jon custom, default: >20
     }
 
     if (mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
         return true;
     else
-        //todo jon custom
-        return nmatchesMap>=8;  // 匹配超过10个点就认为跟踪成功，default:10
+        //todo jon custom, default: >=10
+        return nmatchesMap>=6;  // 匹配超过10个点就认为跟踪成功
 }
 
 /**

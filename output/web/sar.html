@@ -9,8 +9,8 @@
     //THREEx.ArToolkitContext.baseURL = '../'
 </script>
 
-<body style='font-family: Monospace;'>
-    <canvas id="canvas" style="display: none;" width="400" height="300"></canvas>
+<body style='font-family: Monospace;' onload="loadFin()" >
+    <canvas id="canvas" style="display: none;" width="640" height="480"></canvas>
     <script>
         //////////////////////////////////////////////////////////////////////////////////
         //		Init
@@ -82,52 +82,37 @@
             arToolkitSource.copyElementSizeTo(renderer.domElement);
         }
 
-        const material = new THREE.MeshBasicMaterial();
-        material.side = THREE.DoubleSide;
-        material.map = new THREE.TextureLoader().load('./m.jpg');
-        material.color = new THREE.Color(0xAD50FF)
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), material)
-        cube.position.set(0, 0, -0.5);
-        cube.rotation.y = 0.3;
-        cube.rotation.z = 0.3;
-        cube.castShadow = true;
-        scene.add(cube);
+        var loaded = false;
+        function loadFin() {
+            document.getElementById("add-cube").style.background = "#0f0";
+            loaded = true;
+        }
+
+        function addCube() {
+            if(!loaded) {
+                alert("初始化尚未完成，请稍等！！！");
+                return;
+            }
+            const material = new THREE.MeshBasicMaterial();
+            material.side = THREE.DoubleSide;
+            material.map = new THREE.TextureLoader().load('./m.jpg');
+            material.color = new THREE.Color(0xAD50FF)
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), material)
+            cube.position.set(-camera.position.x, camera.position.y, camera.position.z-0.5);
+            cube.rotation.y = 0.3;
+            cube.rotation.z = 0.3;
+            cube.castShadow = true;
+            scene.add(cube);
+        }
 
         // render the scene
         onRenderFcts.push(function () {
             renderer.render(scene, camera);
         })
 
-
-        function trackCallback(arr) {
-            //console.log(arr)
-            const m = new THREE.Matrix4();
-            // m.set(arr[0], arr[1],arr[2],arr[3],
-            //     arr[4], arr[5],arr[6],arr[7],
-            //     arr[8], arr[9],arr[10],arr[11],
-            //     arr[12], arr[13],arr[14],arr[15]);
-
-            m.set(arr[0], arr[4], arr[8], arr[12],
-                arr[1], arr[5],arr[9],arr[13],
-                arr[2], arr[6],arr[10],arr[14],
-                0, 0,0,1);
-            //将当前矩阵翻转为它的逆矩阵
-            const nm = m.invert();
-            const pv = new THREE.Vector3();
-            pv.setFromMatrixColumn(nm, 3);
-            camera.position.x = pv.x;
-            camera.position.y = -pv.y;
-            camera.position.z = -pv.z;
-
-        }
-        function trackCallback2(arr) {
-            camera.position.x = arr[0];
-            camera.position.y = arr[1];
-            camera.position.z = arr[2];
-            camera.rotateX(arr[3]);
-            camera.rotateY(arr[4]);
-            camera.rotateZ(arr[5]);
-            //console.log(camera.position.x, camera.position.y, camera.position.z)
+        function trackCallback(p,q) {
+            camera.position.set(p[0], -p[1],p[2]);
+            camera.rotation.setFromQuaternion(new THREE.Quaternion(q[0], -q[1], -q[2], q[3]));
         }
 
         // 将js的数据复制到wasm的内存(这里heapBytes.byteoffset传递的是wasm内存中数组的指针)
@@ -137,7 +122,11 @@
                 const bytesLen = imgDataBytesData.byteLength;
                 memPtr = Module._malloc(bytesLen);
             //}
-            Module.HEAPU8.set(imgDataBytesData, memPtr);
+            try {
+                Module.HEAPU8.set(imgDataBytesData, memPtr);
+            } catch (e) {
+                console.log(memPtr, e)
+            }
             return memPtr;
         }
 
@@ -145,16 +134,16 @@
         var inited = false;
         var lastTimeMsec = null
         requestAnimationFrame(function animate(nowMsec) {
-            if (video) {
+            if (loaded && video) {
                 if (!inited) {
                     Module._init();
                     inited = true;
                 }
                 let vw = video.videoWidth;
                 let vh = video.videoHeight;
-                let w = 400;
-                let h = 300;
-                ctx.drawImage(video, 0, 0, vw, vh, 0, 0, w, h);
+                let w = vw;
+                let h = vh;
+                ctx.drawImage(video, 0, 0, vw, vh);
                 let imgDataBytes = ctx.getImageData(0, 0, w, h);
                 let tmpPtr = setWasmHeap(imgDataBytes.data);
                 let resPtr = Module._track(tmpPtr, w, h, false);
@@ -175,4 +164,5 @@
         })
 
     </script>
+    <button id="add-cube" onclick="addCube()" style="position: fixed;bottom: 10px;left: 48%;width:80px;height: 30px;line-height: 24px;">添加模型</button>
 </body>
