@@ -54,40 +54,43 @@ int track(int* ptr, int w, int h)
             return 0;
         }
 
-        float transform_ygx[] =
-                {
-                        1, 0, 0, 0,
-                        0, -1, 0, 0,
-                        0, 0, -1, 0,
-                        0, 0, 0, 1
-                };
-        Mat_<float> transformM(4, 4, transform_ygx);
-        Mat r;
-        Tcw.rowRange(0,3).colRange(0,3).copyTo(r);
-        float R[9];
-        memcpy(R, r.data, r.cols*r.rows*sizeof(float));
-        float qw = sqrtf(1.0f + R[0] + R[4] + R[8]) / 2.0f;
-        float qx = -(R[7] - R[5]) / (4*qw) ;
-        float qy = (R[3] - R[1]) / (4*qw) ;
-        float qz = -(R[2] - R[6]) / (4*qw) ;
-        float rotate_ygx[] =
-                {
-                        1 - 2 * qy * qy - 2 * qz * qz, 2 * qx * qy - 2 * qz * qw, 2 * qx * qz + 2 * qy * qw, 0,
-                        2 * qx * qy + 2 * qz * qw, 1 - 2 * qx * qx - 2 * qz * qz, 2 * qy * qz - 2 * qx * qw, 0,
-                        2 * qx * qz - 2 * qy * qw, 2 * qy * qz + 2 * qx * qw, 1 - 2 * qx * qx - 2 * qy * qy, 0,
-                        0, 0, 0, 1
-                };
-        Mat_<float> rotateM(4, 4, rotate_ygx);
-        rotateM = transformM * rotateM;
+//        float transform_ygx[] =
+//                {
+//                        1, 0, 0, 0,
+//                        0, -1, 0, 0,
+//                        0, 0, -1, 0,
+//                        0, 0, 0, 1
+//                };
+//        Mat_<float> transformM(4, 4, transform_ygx);
+//        Mat r;
+//        Tcw.rowRange(0,3).colRange(0,3).copyTo(r);
+//        float R[9];
+//        memcpy(R, r.data, r.cols*r.rows*sizeof(float));
+//        float qw = sqrtf(1.0f + R[0] + R[4] + R[8]) / 2.0f;
+//        float qx = -(R[7] - R[5]) / (4*qw) ;
+//        float qy = (R[3] - R[1]) / (4*qw) ;
+//        float qz = -(R[2] - R[6]) / (4*qw) ;
+//        float rotate_ygx[] =
+//                {
+//                        1 - 2 * qy * qy - 2 * qz * qz, 2 * qx * qy - 2 * qz * qw, 2 * qx * qz + 2 * qy * qw, 0,
+//                        2 * qx * qy + 2 * qz * qw, 1 - 2 * qx * qx - 2 * qz * qz, 2 * qy * qz - 2 * qx * qw, 0,
+//                        2 * qx * qz - 2 * qy * qw, 2 * qy * qz + 2 * qx * qw, 1 - 2 * qx * qx - 2 * qy * qy, 0,
+//                        0, 0, 0, 1
+//                };
+//        Mat_<float> rotateM(4, 4, rotate_ygx);
+//        rotateM = transformM * rotateM;
+//
+//        Mat t = Tcw.col(3);
+//        float tf = t.at<float>(1,0);
+//        t.at<float>(1,0) = -t.at<float>(2,0);
+//        t.at<float>(1,0) = tf;
+//        t = rotateM * t;
 
-        Mat t = Tcw.col(3);
-        float tf = t.at<float>(1,0);
-        t.at<float>(1,0) = -t.at<float>(2,0);
-        t.at<float>(1,0) = tf;
-        t = rotateM * t;
+        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
 
-        vector<float> q = ORB_SLAM3::Converter::toQuaternion(Tcw.rowRange(0,3).colRange(0,3).t());
-        trackEMJS(Tcw.at<float>(0,3), Tcw.at<float>(1,3), Tcw.at<float>(2,3),
+        vector<float> q = ORB_SLAM3::Converter::toQuaternion(Rwc);
+        trackEMJS(twc.at<float>(0, 0), twc.at<float>(0, 1), twc.at<float>(0, 2),
                    q[0], q[1], q[2],q[3]);
 
         return 1;
